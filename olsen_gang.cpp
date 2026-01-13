@@ -58,7 +58,7 @@ string merge_cards(const string& a, const string& b) {
 /* ---------- main ---------- */
 int main() {
     const string dataPath   = "assignment_1/data/";
-    const string resultPath = "assignment_1/results1/";
+    const string resultPath = "assignment_1/results/";
 
     /* ===== READ carddump2 ===== */
     ifstream f2(dataPath + "carddump2.csv");
@@ -157,6 +157,6 @@ int main() {
         cout << "\n";
     }
 
-    cout << "\nDone. Files created in assignment_1/results1/\n";
+    cout << "\nDone. Files created in assignment_1/results/\n";
     return 0;
 }
