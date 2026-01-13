@@ -1,122 +1,162 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <string>
+#include <sstream>
+#include <unordered_map>
 #include <algorithm>
-#include <filesystem>
 
 using namespace std;
-namespace fs = std::filesystem;
 
-// Structure to store a credit card record
-struct CardRecord {
-    string cardNumber;
-    string expiryDate; // format MM/YYYY
-    string pin;
-    string cvv;
+/* ---------- CSV utils ---------- */
 
-    // Other fields can be added if present in CSV
-};
-
-// Function to create a numeric key for sorting: YYYYMM + PIN
-long long createKey(const CardRecord& rec) {
-    int month, year, pin;
-    char sep;
-    istringstream iss(rec.expiryDate);
-    iss >> month >> sep >> year;
-    pin = stoi(rec.pin);
-    return static_cast<long long>(year) * 10000 + month * 100 + pin;
+// split by comma
+vector<string> split_csv(const string& line) {
+    vector<string> out;
+    string cell;
+    stringstream ss(line);
+    while (getline(ss, cell, ',')) out.push_back(cell);
+    return out;
 }
 
-// Function to split card parts and merge
-string halfMixer(const string& f, const string& s) {
-    vector<string> partsF, partsS;
-    string temp;
-    istringstream issF(f);
-    while (getline(issF, temp, '-')) partsF.push_back(temp);
-    istringstream issS(s);
-    while (getline(issS, temp, '-')) partsS.push_back(temp);
-    return partsF[0]+"-"+partsF[1]+"-"+partsF[2]+"-"+partsS[3];
+// split card number by '-'
+vector<string> split_dash(const string& s) {
+    vector<string> out;
+    string part;
+    stringstream ss(s);
+    while (getline(ss, part, '-')) out.push_back(part);
+    return out;
 }
 
-// Read CSV into vector of CardRecord
-vector<CardRecord> readCSV(const string& filepath, bool hasHeader=true) {
-    vector<CardRecord> records;
-    ifstream file(filepath);
-    if (!file.is_open()) {
-        cerr << "Error opening file: " << filepath << endl;
-        return records;
-    }
-    string line;
-    if (hasHeader) getline(file, line); // skip header
-    while (getline(file, line)) {
-        istringstream iss(line);
-        string token;
-        CardRecord rec;
-        // assuming CSV: CardNumber,ExpiryDate,PIN,CVV
-        getline(iss, rec.cardNumber, ',');
-        getline(iss, rec.expiryDate, ',');
-        getline(iss, rec.pin, ',');
-        getline(iss, rec.cvv, ',');
-        records.push_back(rec);
-    }
-    return records;
+/* ---------- key creation ---------- */
+// key = YYYY MM PIN → sortable integer
+long long make_key(const string& expiry, const string& pin) {
+    // expiry format: MM/YYYY
+    auto pos = expiry.find('/');
+    if (pos == string::npos) return 0;
+
+    int month = stoi(expiry.substr(0, pos));
+    int year  = stoi(expiry.substr(pos + 1));
+    int p     = stoi(pin);
+
+    return (long long)year * 1000000LL + month * 10000LL + p;
 }
 
-// Write CSV from vector of CardRecord
-void writeCSV(const string& filepath, const vector<CardRecord>& records) {
-    ofstream file(filepath);
-    if (!file.is_open()) {
-        cerr << "Error opening file for writing: " << filepath << endl;
-        return;
-    }
-    file << "Credit Card Number,Expiry Date,PIN,CVV\n";
-    for (const auto& rec : records) {
-        file << rec.cardNumber << "," << rec.expiryDate << "," << rec.pin << "," << rec.cvv << "\n";
-    }
-    file.close();
+/* ---------- card merge ---------- */
+// dump1: nnnn-nnnn-nnnn-****
+// dump2: ****-****-****-nnnn
+string merge_cards(const string& a, const string& b) {
+    auto pa = split_dash(a);
+    auto pb = split_dash(b);
+
+    if (pa.size() != 4 || pb.size() != 4)
+        throw runtime_error("Invalid card format");
+
+    return pa[0] + "-" + pa[1] + "-" + pa[2] + "-" + pb[3];
 }
 
+/* ---------- main ---------- */
 int main() {
-    // Ensure results folder exists
-    fs::create_directories("assignment_1/results");
+    const string dataPath   = "assignment_1/data/";
+    const string resultPath = "assignment_1/results/";
 
-    // 1. Read carddump2, sort, and write sorted CSV
-    auto dump2 = readCSV("assignment_1/data/carddump2.csv");
-    sort(dump2.begin(), dump2.end(), [](const CardRecord& a, const CardRecord& b){
-        return createKey(a) < createKey(b);
-    });
-    string sortedDump2Path = "assignment_1/results/carddump2_sorted.csv";
-    writeCSV(sortedDump2Path, dump2);
-    cout << "Sorted carddump2 written to: " << sortedDump2Path << endl;
-
-    // 2. Read carddump1
-    auto dump1 = readCSV("assignment_1/data/carddump1.csv");
-
-    // 3. Merge card numbers
-    if (dump1.size() != dump2.size()) {
-        cerr << "Mismatch in row counts between dump1 and dump2!" << endl;
+    /* ===== READ carddump2 ===== */
+    ifstream f2(dataPath + "carddump2.csv");
+    if (!f2.is_open()) {
+        cerr << "Cannot open carddump2.csv\n";
         return 1;
     }
 
-    vector<CardRecord> finalList;
-    for (size_t i = 0; i < dump1.size(); ++i) {
-        CardRecord rec = dump2[i]; // take all other fields from sorted dump2
-        rec.cardNumber = halfMixer(dump1[i].cardNumber, dump2[i].cardNumber);
-        finalList.push_back(rec);
+    string header;
+    getline(f2, header);
+    auto headers = split_csv(header);
+
+    vector<vector<string>> rows2;
+    string line;
+    while (getline(f2, line)) {
+        rows2.push_back(split_csv(line));
+    }
+    f2.close();
+
+    // find columns
+    int colCard = -1, colExpiry = -1, colPin = -1;
+    for (int i = 0; i < headers.size(); i++) {
+        if (headers[i] == "Credit Card Number") colCard = i;
+        if (headers[i] == "Expiry Date") colExpiry = i;
+        if (headers[i] == "PIN") colPin = i;
     }
 
-    // 4. Write final merged CSV
-    string finalPath = "assignment_1/results/carddump_sorted_full.csv";
-    writeCSV(finalPath, finalList);
-    cout << "Merged card list written to: " << finalPath << endl;
-
-    // 5. Print fully merged list
-    cout << "\nFull merged list:\n";
-    for (const auto& rec : finalList) {
-        cout << rec.cardNumber << "," << rec.expiryDate << "," << rec.pin << "," << rec.cvv << "\n";
+    if (colCard < 0 || colExpiry < 0 || colPin < 0) {
+        cerr << "Required columns not found\n";
+        return 1;
     }
 
+    /* ===== SORT carddump2 ===== */
+    sort(rows2.begin(), rows2.end(), [&](auto& a, auto& b) {
+        return make_key(a[colExpiry], a[colPin]) <
+               make_key(b[colExpiry], b[colPin]);
+    });
+
+    /* ===== WRITE sorted carddump2 ===== */
+    ofstream out2(resultPath + "carddump2_sorted.csv");
+    out2 << header << "\n";
+    for (auto& r : rows2) {
+        for (int i = 0; i < r.size(); i++) {
+            if (i) out2 << ",";
+            out2 << r[i];
+        }
+        out2 << "\n";
+    }
+    out2.close();
+
+    /* ===== READ carddump1 ===== */
+    ifstream f1(dataPath + "carddump1.csv");
+    if (!f1.is_open()) {
+        cerr << "Cannot open carddump1.csv\n";
+        return 1;
+    }
+
+    getline(f1, header);
+    vector<vector<string>> rows1;
+    while (getline(f1, line)) {
+        rows1.push_back(split_csv(line));
+    }
+    f1.close();
+
+    if (rows1.size() != rows2.size()) {
+        cerr << "Row count mismatch\n";
+        return 1;
+    }
+
+    /* ===== MERGE ===== */
+    vector<vector<string>> merged = rows2;
+    for (size_t i = 0; i < merged.size(); i++) {
+        merged[i][colCard] =
+            merge_cards(rows1[i][colCard], rows2[i][colCard]);
+    }
+
+    /* ===== WRITE FINAL CSV ===== */
+    ofstream outFinal(resultPath + "carddump_sorted_full.csv");
+    outFinal << header << "\n";
+    for (auto& r : merged) {
+        for (int i = 0; i < r.size(); i++) {
+            if (i) outFinal << ",";
+            outFinal << r[i];
+        }
+        outFinal << "\n";
+    }
+    outFinal.close();
+
+    /* ===== PRINT TO CONSOLE ===== */
+    cout << header << "\n";
+    for (auto& r : merged) {
+        for (int i = 0; i < r.size(); i++) {
+            if (i) cout << ", ";
+            cout << r[i];
+        }
+        cout << "\n";
+    }
+
+    cout << "\nDone. Files created in assignment_1/results/\n";
     return 0;
 }
