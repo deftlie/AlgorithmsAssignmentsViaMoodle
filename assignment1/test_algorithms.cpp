@@ -1,11 +1,13 @@
+// Testing execution time of algorithms and saving results to CSV with full precision
 #include <iostream>
 #include <vector>
 #include <chrono>
 #include <functional>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
-#include <algorithm>
+#include <limits> // for max_digits10
 
 using namespace std;
 using namespace chrono;
@@ -37,7 +39,6 @@ void insertionSort(vector<int>& arr) {
 void merge(vector<int>& arr, int left, int mid, int right) {
     vector<int> L(arr.begin() + left, arr.begin() + mid + 1);
     vector<int> R(arr.begin() + mid + 1, arr.begin() + right + 1);
-
     int i = 0, j = 0, k = left;
     while (i < L.size() && j < R.size())
         arr[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];
@@ -82,12 +83,12 @@ vector<int> generateArray(int n) {
     return arr;
 }
 
-// Measure execution time (seconds)
+// Measure execution time in seconds
 double measure(function<void(vector<int>&)> sortFunc, vector<int> arr) {
     auto start = high_resolution_clock::now();
     sortFunc(arr);
     auto end = high_resolution_clock::now();
-    return duration_cast<duration<double>>(end - start).count();
+    return chrono::duration_cast<chrono::duration<double>>(end - start).count();
 }
 
 int main() {
@@ -96,34 +97,36 @@ int main() {
     vector<int> sizes = {1, 5, 10, 25, 50, 100, 300, 500, 1000, 2000};
     const int runs = 5;
 
-    cout << scientific << setprecision(17);
+    // Open CSV file
+    ofstream csv("sorting_results.csv");
+    csv << "ArraySize,Algorithm,TimeSeconds\n";
 
     for (int n : sizes) {
-        double bubbleSum = 0;
-        double insertionSum = 0;
-        double mergeSum = 0;
-        double quickSum = 0;
+        double bubbleSum = 0, insertionSum = 0, mergeSum = 0, quickSum = 0;
 
         for (int i = 0; i < runs; i++) {
             vector<int> base = generateArray(n);
 
             bubbleSum += measure(bubbleSort, base);
             insertionSum += measure(insertionSort, base);
-            mergeSum += measure([&](vector<int>& v) {
-                if (!v.empty()) mergeSort(v, 0, v.size() - 1);
-            }, base);
-            quickSum += measure([&](vector<int>& v) {
-                if (!v.empty()) quickSort(v, 0, v.size() - 1);
-            }, base);
+            mergeSum += measure([&](vector<int>& v) { if(!v.empty()) mergeSort(v,0,v.size()-1); }, base);
+            quickSum += measure([&](vector<int>& v) { if(!v.empty()) quickSort(v,0,v.size()-1); }, base);
         }
 
-        cout << "Array size: " << n << endl;
-        cout << "Bubble:    " << bubbleSum / runs << " s" << endl;
-        cout << "Insertion: " << insertionSum / runs << " s" << endl;
-        cout << "Merge:     " << mergeSum / runs << " s" << endl;
-        cout << "Quick:     " << quickSum / runs << " s" << endl;
-        cout << "---------------------------------" << endl;
+        double bubbleAvg = bubbleSum / runs;
+        double insertionAvg = insertionSum / runs;
+        double mergeAvg = mergeSum / runs;
+        double quickAvg = quickSum / runs;
+
+        // Save to CSV with full precision
+        csv << n << ",Bubble," << scientific << setprecision(numeric_limits<double>::max_digits10) << bubbleAvg << "\n";
+        csv << n << ",Insertion," << scientific << setprecision(numeric_limits<double>::max_digits10) << insertionAvg << "\n";
+        csv << n << ",Merge," << scientific << setprecision(numeric_limits<double>::max_digits10) << mergeAvg << "\n";
+        csv << n << ",Quick," << scientific << setprecision(numeric_limits<double>::max_digits10) << quickAvg << "\n";
     }
+
+    csv.close();
+    cout << "CSV file 'sorting_results.csv' created successfully!\n";
 
     return 0;
 }
