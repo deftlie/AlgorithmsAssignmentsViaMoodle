@@ -1,3 +1,4 @@
+// Testing the execution time of algorithms depending on array sizes
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -5,11 +6,11 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace chrono;
 
-// ======== Sorting algorithms ========
 
 // Bubble sort
 void bubbleSort(vector<int>& arr) {
@@ -71,7 +72,6 @@ void quickSort(vector<int>& arr,int low,int high){
     }
 }
 
-// ======== Utils ========
 
 // Generate random array
 vector<int> generateArray(int n){
@@ -88,7 +88,7 @@ double measure(function<void(vector<int>&)> f, vector<int> arr){
     return chrono::duration_cast<chrono::duration<double>>(end-start).count();
 }
 
-// ======== Main ========
+//main
 int main(){
     srand(time(nullptr));
 
@@ -115,8 +115,20 @@ int main(){
         double m_avg=m_sum/runs;
         double q_avg=q_sum/runs;
 
-        // write row to CSV
-        csv << n << "," << b_avg << "," << i_avg << "," << m_avg << "," << q_avg << "\n";
+        //maximum double precision
+        csv << n << ","
+            << setprecision(17) << b_avg << ","
+            << setprecision(17) << i_avg << ","
+            << setprecision(17) << m_avg << ","
+            << setprecision(17) << q_avg << "\n";
+
+        //print
+        cout << "Array size: " << n << endl;
+        cout << "Bubble:    " << setprecision(17) << b_avg << " s" << endl;
+        cout << "Insertion: " << setprecision(17) << i_avg << " s" << endl;
+        cout << "Merge:     " << setprecision(17) << m_avg << " s" << endl;
+        cout << "Quick:     " << setprecision(17) << q_avg << " s" << endl;
+        cout << "---------------------------------" << endl;
     }
 
     csv.close();
