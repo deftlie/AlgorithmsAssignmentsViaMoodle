@@ -5,11 +5,12 @@
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
+#include <algorithm>
 
 using namespace std;
 using namespace chrono;
 
-// ---------------- Bubble Sort ----------------
+// Bubble sort
 void bubbleSort(vector<int>& arr) {
     int n = arr.size();
     for (int i = 0; i < n - 1; i++)
@@ -18,7 +19,7 @@ void bubbleSort(vector<int>& arr) {
                 swap(arr[j], arr[j + 1]);
 }
 
-// ---------------- Insertion Sort ----------------
+// Insertion sort
 void insertionSort(vector<int>& arr) {
     int n = arr.size();
     for (int i = 1; i < n; i++) {
@@ -32,20 +33,19 @@ void insertionSort(vector<int>& arr) {
     }
 }
 
-// ---------------- Merge Sort ----------------
+// Merge sort helper
 void merge(vector<int>& arr, int left, int mid, int right) {
     vector<int> L(arr.begin() + left, arr.begin() + mid + 1);
     vector<int> R(arr.begin() + mid + 1, arr.begin() + right + 1);
 
     int i = 0, j = 0, k = left;
-
     while (i < L.size() && j < R.size())
         arr[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];
-
     while (i < L.size()) arr[k++] = L[i++];
     while (j < R.size()) arr[k++] = R[j++];
 }
 
+// Merge sort
 void mergeSort(vector<int>& arr, int left, int right) {
     if (left >= right) return;
     int mid = (left + right) / 2;
@@ -54,19 +54,18 @@ void mergeSort(vector<int>& arr, int left, int right) {
     merge(arr, left, mid, right);
 }
 
-// ---------------- Quick Sort ----------------
+// Quick sort helper
 int partition(vector<int>& arr, int low, int high) {
     int pivot = arr[high];
     int i = low - 1;
-
     for (int j = low; j < high; j++)
         if (arr[j] < pivot)
             swap(arr[++i], arr[j]);
-
     swap(arr[i + 1], arr[high]);
     return i + 1;
 }
 
+// Quick sort
 void quickSort(vector<int>& arr, int low, int high) {
     if (low < high) {
         int p = partition(arr, low, high);
@@ -74,8 +73,6 @@ void quickSort(vector<int>& arr, int low, int high) {
         quickSort(arr, p + 1, high);
     }
 }
-
-// ---------------- Utils ----------------
 
 // Generate random array
 vector<int> generateArray(int n) {
@@ -93,14 +90,13 @@ double measure(function<void(vector<int>&)> sortFunc, vector<int> arr) {
     return duration_cast<duration<double>>(end - start).count();
 }
 
-// ---------------- Main ----------------
 int main() {
     srand(time(nullptr));
 
     vector<int> sizes = {1, 5, 10, 25, 50, 100, 300, 500, 1000, 2000};
     const int runs = 5;
 
-    cout << fixed << scientific;
+    cout << scientific << setprecision(17);
 
     for (int n : sizes) {
         double bubbleSum = 0;
@@ -113,15 +109,11 @@ int main() {
 
             bubbleSum += measure(bubbleSort, base);
             insertionSum += measure(insertionSort, base);
-
             mergeSum += measure([&](vector<int>& v) {
-                if (!v.empty())
-                    mergeSort(v, 0, v.size() - 1);
+                if (!v.empty()) mergeSort(v, 0, v.size() - 1);
             }, base);
-
             quickSum += measure([&](vector<int>& v) {
-                if (!v.empty())
-                    quickSort(v, 0, v.size() - 1);
+                if (!v.empty()) quickSort(v, 0, v.size() - 1);
             }, base);
         }
 
