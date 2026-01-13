@@ -15,62 +15,68 @@ using namespace chrono;
 // Bubble sort
 void bubbleSort(vector<int>& arr) {
     int n = arr.size();
-    for(int i=0;i<n-1;i++)
-        for(int j=0;j<n-i-1;j++)
-            if(arr[j] > arr[j+1])
-                swap(arr[j], arr[j+1]);
+    for (int i = 0; i < n - 1; i++)
+        for (int j = 0; j < n - i - 1; j++)
+            if (arr[j] > arr[j + 1])
+                swap(arr[j], arr[j + 1]);
 }
 
 // Insertion sort
 void insertionSort(vector<int>& arr) {
     int n = arr.size();
-    for(int i=1;i<n;i++){
+    for (int i = 1; i < n; i++) {
         int key = arr[i];
-        int j=i-1;
-        while(j>=0 && arr[j]>key){
-            arr[j+1]=arr[j];
+        int j = i - 1;
+        while (j >= 0 && arr[j] > key) {
+            arr[j + 1] = arr[j];
             j--;
         }
-        arr[j+1]=key;
+        arr[j + 1] = key;
     }
 }
 
 // Merge sort helper
-void merge(vector<int>& arr, int l, int m, int r){
-    vector<int> L(arr.begin()+l, arr.begin()+m+1);
-    vector<int> R(arr.begin()+m+1, arr.begin()+r+1);
-    int i=0,j=0,k=l;
-    while(i<L.size() && j<R.size())
-        arr[k++]=(L[i]<=R[j]?L[i++]:R[j++]);
-    while(i<L.size()) arr[k++]=L[i++];
-    while(j<R.size()) arr[k++]=R[j++];
+void merge(vector<int>& arr, int left, int mid, int right) {
+    vector<int> L(arr.begin() + left, arr.begin() + mid + 1);
+    vector<int> R(arr.begin() + mid + 1, arr.begin() + right + 1);
+
+    int i = 0, j = 0, k = left;
+    while (i < L.size() && j < R.size())
+        arr[k++] = (L[i] <= R[j]) ? L[i++] : R[j++];
+    while (i < L.size()) arr[k++] = L[i++];
+    while (j < R.size()) arr[k++] = R[j++];
 }
 
-void mergeSort(vector<int>& arr, int l, int r){
-    if(l>=r) return;
-    int m=(l+r)/2;
-    mergeSort(arr,l,m);
-    mergeSort(arr,m+1,r);
-    merge(arr,l,m,r);
+// Merge sort
+void mergeSort(vector<int>& arr, int left, int right) {
+    if (left >= right) return;
+    int mid = (left + right) / 2;
+    mergeSort(arr, left, mid);
+    mergeSort(arr, mid + 1, right);
+    merge(arr, left, mid, right);
 }
 
 // Quick sort helper
-int partition(vector<int>& arr,int low,int high){
-    int pivot=arr[high];
-    int i=low-1;
-    for(int j=low;j<high;j++)
-        if(arr[j]<pivot) swap(arr[++i],arr[j]);
-    swap(arr[i+1],arr[high]);
-    return i+1;
+int partition(vector<int>& arr, int low, int high) {
+    int pivot = arr[high];
+    int i = low - 1;
+    for (int j = low; j < high; j++)
+        if (arr[j] < pivot)
+            swap(arr[++i], arr[j]);
+    swap(arr[i + 1], arr[high]);
+    return i + 1;
 }
 
-void quickSort(vector<int>& arr,int low,int high){
-    if(low<high){
-        int p=partition(arr,low,high);
-        quickSort(arr,low,p-1);
-        quickSort(arr,p+1,high);
+// Quick sort
+void quickSort(vector<int>& arr, int low, int high) {
+    if (low < high) {
+        int p = partition(arr, low, high);
+        quickSort(arr, low, p - 1);
+        quickSort(arr, p + 1, high);
     }
 }
+
+
 
 
 // Generate random array
@@ -98,6 +104,9 @@ int main(){
     ofstream csv("sorting_results.csv");
     csv << "n,Bubble,Insertion,Merge,Quick\n";
 
+    // fixed number of digits
+    const int precision = 17;
+
     for(int n : sizes){
         double b_sum=0,i_sum=0,m_sum=0,q_sum=0;
 
@@ -115,19 +124,19 @@ int main(){
         double m_avg=m_sum/runs;
         double q_avg=q_sum/runs;
 
-        //maximum double precision
+        // write row to CSV
         csv << n << ","
-            << setprecision(17) << b_avg << ","
-            << setprecision(17) << i_avg << ","
-            << setprecision(17) << m_avg << ","
-            << setprecision(17) << q_avg << "\n";
+            << scientific << setprecision(precision) << b_avg << ","
+            << scientific << setprecision(precision) << i_avg << ","
+            << scientific << setprecision(precision) << m_avg << ","
+            << scientific << setprecision(precision) << q_avg << "\n";
 
-        //print
+        // print
         cout << "Array size: " << n << endl;
-        cout << "Bubble:    " << setprecision(17) << b_avg << " s" << endl;
-        cout << "Insertion: " << setprecision(17) << i_avg << " s" << endl;
-        cout << "Merge:     " << setprecision(17) << m_avg << " s" << endl;
-        cout << "Quick:     " << setprecision(17) << q_avg << " s" << endl;
+        cout << "Bubble:    " << scientific << setprecision(precision) << b_avg << " s" << endl;
+        cout << "Insertion: " << scientific << setprecision(precision) << i_avg << " s" << endl;
+        cout << "Merge:     " << scientific << setprecision(precision) << m_avg << " s" << endl;
+        cout << "Quick:     " << scientific << setprecision(precision) << q_avg << " s" << endl;
         cout << "---------------------------------" << endl;
     }
 
