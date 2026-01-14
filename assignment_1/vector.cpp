@@ -1,6 +1,8 @@
-//C++ Vector implementation
+// C++ Vector implementation
 #include <iostream>
 #include <stdexcept>
+
+using namespace std;
 
 class MyVector {
 private:
@@ -39,13 +41,13 @@ public:
 
     int get(size_t index) const {
         if (index >= sz)
-            throw std::out_of_range("Index out of range");
+            throw out_of_range("Index out of range");
         return data[index];
     }
 
     void set(size_t index, int value) {
         if (index >= sz)
-            throw std::out_of_range("Index out of range");
+            throw out_of_range("Index out of range");
         data[index] = value;
     }
 
@@ -65,7 +67,7 @@ public:
 
     void erase(size_t index) {
         if (index >= sz)
-            throw std::out_of_range("Index out of range");
+            throw out_of_range("Index out of range");
 
         for (size_t i = index; i + 1 < sz; ++i)
             data[i] = data[i + 1];
@@ -74,7 +76,7 @@ public:
 
     void erase(size_t l, size_t r) {
         if (l >= sz || r > sz || l >= r)
-            throw std::out_of_range("Invalid range");
+            throw out_of_range("Invalid range");
 
         size_t count = r - l;
         for (size_t i = l; i + count < sz; ++i)
@@ -83,7 +85,7 @@ public:
     }
 };
 
-//main
+// main
 int main() {
     MyVector v;
     v.push_back(10);
@@ -92,6 +94,6 @@ int main() {
 
     v.erase(1); // удаляем 20
 
-    std::cout << v[0] << " " << v[1] << std::endl;
+    cout << v[0] << " " << v[1] << endl;
     return 0;
 }

@@ -3,4 +3,4 @@ project(AlgorithmsAssignmentsViaMoodle)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(AlgorithmsAssignmentsViaMoodle assignment_1/vector.cpp)
+add_executable(AlgorithmsAssignmentsViaMoodle assignment_1/test_vector.cpp)
