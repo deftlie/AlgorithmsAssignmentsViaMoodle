@@ -85,14 +85,13 @@ public:
     }
 };
 
-// main
 int main() {
     MyVector v;
     v.push_back(10);
     v.push_back(20);
     v.push_back(30);
 
-    v.erase(1); // удаляем 20
+    v.erase(1);
 
     cout << v[0] << " " << v[1] << endl;
     return 0;

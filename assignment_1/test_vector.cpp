@@ -5,7 +5,6 @@
 
 using namespace std;
 
-// MyVector
 class MyVector {
 private:
     int* data;
@@ -21,7 +20,6 @@ private:
         data = newData;
         cap = newCap;
 
-        // Показываем момент realloc
         cout << "[MyVector] realloc to " << cap << "\n";
     }
 
@@ -38,7 +36,6 @@ public:
     }
 };
 
-// Linked List
 class LinkedList {
 private:
     struct Node {
@@ -120,7 +117,6 @@ void test_linkedlist(size_t N) {
          << " s\n\n";
 }
 
-// main
 int main() {
     const size_t N = 5'000'000;
 
