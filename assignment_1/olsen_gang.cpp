@@ -16,8 +16,6 @@ struct CardRow {
     string network;
 };
 
-// ---------- utils ----------
-
 // remove '*' and commas (for final merge)
 string clean_string(const string& s) {
     string res;
@@ -124,8 +122,6 @@ double timeit(Func f){
     return duration_cast<duration<double>>(end-start).count();
 }
 
-// ---------- MAIN ----------
-
 int main() {
     const string data_path = "assignment_1/data/";
     const string res_path  = "assignment_1/results/";
@@ -133,7 +129,7 @@ int main() {
     auto dump2 = read_csv(data_path + "carddump2.csv");
     if(dump2.empty()) return 1;
 
-    // 1. Sort carddump2 by Expiry+PIN and write sorted CSV
+    //Sort carddump2 and write sorted CSV
     stable_sort(dump2.begin(), dump2.end(), [](const CardRow& a,const CardRow& b){
         return make_key(a.expiry,a.pin) < make_key(b.expiry,b.pin);
     });
@@ -142,7 +138,7 @@ int main() {
     auto dump1 = read_csv(data_path + "carddump1.csv");
     if(dump1.size() != dump2.size()){ cerr << "Row count mismatch\n"; return 1; }
 
-    // ---------- Empirical study ----------
+    //Empirical study
     vector<size_t> sizes = {1000,2000,5000,10000,20000};
     cout << "\nEmpirical timing study (linear vs log-linear):\n";
     cout << "N\tLinear(s)\tLogLinear(s)\n";
@@ -156,11 +152,11 @@ int main() {
         cout << N << "\t" << t_linear << "\t" << t_loglinear << "\n";
     }
 
-    // ---------- Final merge ----------
+    //Final merge
     auto merged = merge_linear_index(dump1,dump2);
     write_csv(res_path + "carddump_sorted_full.csv", merged);
 
-    // ---------- Console output ----------
+    //Console output
     cout << "\nFinal merged cards:\n";
     cout << "Credit Card Number,Expiry Date,Verification Code,PIN,Issueing Network\n";
     for(const auto& r:merged)
