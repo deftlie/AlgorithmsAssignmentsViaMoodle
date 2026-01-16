@@ -9,9 +9,8 @@ using namespace std;
 
 long long pivotCount = 0;
 
-// ======================
+
 // Single-pivot Quick Sort
-// ======================
 int partitionSingle(vector<int>& arr, int low, int high) {
     pivotCount++;
     int pivot = arr[high];
@@ -31,9 +30,8 @@ void quickSortSingle(vector<int>& arr, int low, int high) {
     }
 }
 
-// ======================
+
 // Dual-pivot Quick Sort
-// ======================
 void quickSortDual(vector<int>& arr, int low, int high) {
     if (low >= high) return;
     pivotCount += 2;
@@ -55,9 +53,8 @@ void quickSortDual(vector<int>& arr, int low, int high) {
     quickSortDual(arr, gt + 1, high);
 }
 
-// ======================
-// Triple-pivot Quick Sort (учебная версия)
-// ======================
+
+// Triple-pivot Quick Sort
 void quickSortTriple(vector<int>& arr, int low, int high) {
     if (low >= high) return;
     pivotCount += 3;
@@ -90,9 +87,8 @@ void quickSortTriple(vector<int>& arr, int low, int high) {
     if (!right.empty()) quickSortTriple(arr, low + left.size() + middle.size() + 2, high - 1);
 }
 
-// ======================
+
 // Generate random array
-// ======================
 vector<int> generateArray(int n) {
     vector<int> arr(n);
     random_device rd;
@@ -102,9 +98,8 @@ vector<int> generateArray(int n) {
     return arr;
 }
 
-// ======================
+
 // Benchmark wrappers
-// ======================
 double benchmarkSingle(vector<int> arr) {
     pivotCount = 0;
     auto start = chrono::high_resolution_clock::now();
@@ -129,13 +124,10 @@ double benchmarkTriple(vector<int> arr) {
     return chrono::duration<double>(end - start).count();
 }
 
-// ======================
-// Main
-// ======================
 int main() {
     vector<int> sizes = {1000,5000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000};
 
-    // Заголовок таблицы
+
     cout << setw(8) << "Size"
          << setw(16) << "SingleTime"
          << setw(16) << "DualTime"
