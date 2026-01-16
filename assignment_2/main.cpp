@@ -10,7 +10,6 @@
 using namespace std;
 using namespace chrono;
 
-// ==================== BINARY TREE ====================
 struct BinaryNode {
     int key;
     BinaryNode* left;
@@ -54,7 +53,6 @@ private:
     }
 };
 
-// ==================== TERNARY TREE ====================
 struct TernaryNode {
     int key1, key2;
     TernaryNode* left;
@@ -89,7 +87,6 @@ private:
     }
 };
 
-// ==================== AVL TREE ====================
 struct AVLNode {
     int key;
     AVLNode* left;
@@ -145,7 +142,8 @@ private:
     }
 };
 
-// ==================== HELPERS ====================
+// ----------------- HELPERS ----------------------
+
 vector<int> generateRandomKeys(int n) {
     vector<int> keys(n);
     iota(keys.begin(), keys.end(), 1);
@@ -169,13 +167,12 @@ vector<int> buildPerfectOrder(vector<int> keys) {
     return order;
 }
 
-// Функция для медианы
+
 long long median(vector<long long> v) {
     sort(v.begin(), v.end());
     return v[v.size()/2];
 }
 
-// Функция для измерения медианного времени вставки
 template<typename TreeType>
 pair<long long,int> measureInsertMedian(const vector<int>& keys, int runs) {
     vector<long long> times;
@@ -191,9 +188,8 @@ pair<long long,int> measureInsertMedian(const vector<int>& keys, int runs) {
     return {median(times), h};
 }
 
-// ==================== MAIN ====================
 int main() {
-    int n = 255; // увеличено для наглядного эффекта
+    int n = 255;
     auto keys = generateRandomKeys(n);
     auto perfectOrder = buildPerfectOrder(keys);
     int runs = 5;
