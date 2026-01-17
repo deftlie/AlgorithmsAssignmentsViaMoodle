@@ -188,7 +188,7 @@ int main() {
     radix_sort_dump2(sorted_d2);
     auto final_merged = merge_linear_index(dump1_orig, sorted_d2);
 
-    // ----------------- Вывод всех строк ----------
+    
     cout << "\n=== Final merged dump1 + dump2 ===\n";
     cout << "Credit Card Number,Expiry Date,Verification Code,PIN,Issueing Network\n";
     for (const auto& r : final_merged) {
@@ -196,7 +196,6 @@ int main() {
              << r.pin << "," << r.network << "\n";
     }
 
-    // ----------------- Запись в CSV ----------
     write_csv(res_path + "carddump_sorted_full.csv", final_merged);
     cout << "\nFinal merged CSV created: " << res_path + "carddump_sorted_full.csv\n";
     cout << "DONE.\n";
