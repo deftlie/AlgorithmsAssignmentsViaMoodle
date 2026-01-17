@@ -2,12 +2,14 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <chrono>
 
 using namespace std;
 using namespace chrono;
 
+// ----------------- Struct -----------------
 struct CardRow {
     string card_number;
     string expiry;
@@ -16,7 +18,7 @@ struct CardRow {
     string network;
 };
 
-// remove '*' and commas (for final merge)
+// ----------------- Helpers -----------------
 string clean_string(const string& s) {
     string res;
     for (char c : s)
@@ -25,31 +27,25 @@ string clean_string(const string& s) {
     return res;
 }
 
-// format 16-digit card number as XXXX-XXXX-XXXX-XXXX
 string format_card(const string& digits) {
     string d;
     for (char c : digits)
         if (isdigit(c)) d += c;
 
     if (d.size() != 16) return d;
-
     return d.substr(0,4) + "-" + d.substr(4,4) + "-" +
            d.substr(8,4) + "-" + d.substr(12,4);
 }
 
-// create sorting key: YYYYMM + PIN
-long long make_key(const string& expiry, const string& pin) {
-    if (expiry.empty() || pin.empty()) return 0;
-    int mm=0, yyyy=0;
+// Convert expiry MM/YYYY to numbers
+void parse_expiry(const string& expiry, int& month, int& year) {
+    month = 0; year = 0;
     char slash;
     stringstream ss(expiry);
-    if (!(ss >> mm >> slash >> yyyy)) return 0;
-    int pin_i = 0;
-    try { pin_i = stoi(pin); } catch(...) { pin_i = 0; }
-    return (long long)yyyy * 1000000LL + mm * 10000LL + pin_i;
+    ss >> month >> slash >> year;
 }
 
-// ---------- CSV ----------
+// ----------------- CSV -----------------
 
 vector<CardRow> read_csv(const string& path) {
     vector<CardRow> rows;
@@ -58,7 +54,6 @@ vector<CardRow> read_csv(const string& path) {
 
     string line;
     getline(file, line); // skip header
-
     while (getline(file, line)) {
         stringstream ss(line);
         CardRow r;
@@ -81,10 +76,48 @@ void write_csv(const string& path, const vector<CardRow>& rows) {
             << r.pin << "," << r.network << "\n";
 }
 
-// ---------- Linear merge by index ----------
+// ----------------- Radix Sort (linear) -----------------
 
+void counting_sort(vector<CardRow>& arr, int (*key_func)(const CardRow&), int max_key) {
+    vector<vector<CardRow>> buckets(max_key + 1);
+    for (auto& r : arr) {
+        int k = key_func(r);
+        buckets[k].push_back(r);
+    }
+    size_t idx = 0;
+    for (auto& bucket : buckets) {
+        for (auto& r : bucket) arr[idx++] = r;
+    }
+}
+
+int get_pin(const CardRow& r) {
+    int p = 0;
+    try { p = stoi(r.pin); } catch(...) { p = 0; }
+    return p;
+}
+
+int get_month(const CardRow& r) {
+    int m, y;
+    parse_expiry(r.expiry, m, y);
+    return m;
+}
+
+int get_year(const CardRow& r) {
+    int m, y;
+    parse_expiry(r.expiry, m, y);
+    return y;
+}
+
+void radix_sort_dump2(vector<CardRow>& arr) {
+    counting_sort(arr, get_pin, 9999);      // PIN
+    counting_sort(arr, get_month, 12);      // Month
+    counting_sort(arr, get_year, 3000);     // Year, 0–3000
+}
+
+// ----------------- Linear merge -----------------
 vector<CardRow> merge_linear_index(const vector<CardRow>& dump1, const vector<CardRow>& dump2) {
     vector<CardRow> merged;
+    merged.reserve(dump1.size());
     for (size_t i = 0; i < dump1.size(); ++i) {
         string full_digits = clean_string(dump1[i].card_number) + clean_string(dump2[i].card_number);
         CardRow r = dump2[i]; // take other fields from dump2
@@ -94,26 +127,7 @@ vector<CardRow> merge_linear_index(const vector<CardRow>& dump1, const vector<Ca
     return merged;
 }
 
-// ---------- Log-linear merge ----------
-
-vector<CardRow> merge_loglinear(const vector<CardRow>& dump1, const vector<CardRow>& dump2) {
-    auto d1=dump1; auto d2=dump2;
-    auto cmp = [](const CardRow& a, const CardRow& b){ return make_key(a.expiry,a.pin) < make_key(b.expiry,b.pin); };
-    sort(d1.begin(), d1.end(), cmp);
-    sort(d2.begin(), d2.end(), cmp);
-
-    vector<CardRow> merged;
-    for (size_t i=0;i<d1.size();++i) {
-        string full_digits = clean_string(d1[i].card_number) + clean_string(d2[i].card_number);
-        CardRow r=d2[i];
-        r.card_number = format_card(full_digits);
-        merged.push_back(r);
-    }
-    return merged;
-}
-
-// ---------- Timing helper ----------
-
+// ----------------- Timing -----------------
 template<typename Func>
 double timeit(Func f){
     auto start = high_resolution_clock::now();
@@ -122,6 +136,7 @@ double timeit(Func f){
     return duration_cast<duration<double>>(end-start).count();
 }
 
+// ----------------- Main -----------------
 int main() {
     const string data_path = "assignment_1/data/";
     const string res_path  = "assignment_1/results/";
@@ -129,34 +144,31 @@ int main() {
     auto dump2 = read_csv(data_path + "carddump2.csv");
     if(dump2.empty()) return 1;
 
-    //Sort carddump2 and write sorted CSV
-    stable_sort(dump2.begin(), dump2.end(), [](const CardRow& a,const CardRow& b){
-        return make_key(a.expiry,a.pin) < make_key(b.expiry,b.pin);
-    });
+    // Sort dump2 using radix sort (linear algorithm)
+    double t_sort = timeit([&](){ radix_sort_dump2(dump2); });
+    cout << "Radix sort dump2 time: " << t_sort << " s\n";
+
     write_csv(res_path + "carddump2_sorted.csv", dump2);
 
     auto dump1 = read_csv(data_path + "carddump1.csv");
     if(dump1.size() != dump2.size()){ cerr << "Row count mismatch\n"; return 1; }
 
-    //Empirical study
+    // Empirical study
     vector<size_t> sizes = {1000,2000,5000,10000,20000};
-    cout << "\nEmpirical timing study (linear vs log-linear):\n";
-    cout << "N\tLinear(s)\tLogLinear(s)\n";
+    cout << "\nEmpirical timing study (linear merge):\n";
+    cout << "N\tLinear(s)\n";
     for(auto N : sizes){
         vector<CardRow> d1(dump1.begin(), dump1.begin()+N);
         vector<CardRow> d2(dump2.begin(), dump2.begin()+N);
 
         double t_linear = timeit([&](){ auto m = merge_linear_index(d1,d2); });
-        double t_loglinear = timeit([&](){ auto m = merge_loglinear(d1,d2); });
-
-        cout << N << "\t" << t_linear << "\t" << t_loglinear << "\n";
+        cout << N << "\t" << t_linear << "\n";
     }
 
-    //Final merge
+    // Final merge
     auto merged = merge_linear_index(dump1,dump2);
     write_csv(res_path + "carddump_sorted_full.csv", merged);
 
-    //Console output
     cout << "\nFinal merged cards:\n";
     cout << "Credit Card Number,Expiry Date,Verification Code,PIN,Issueing Network\n";
     for(const auto& r:merged)
